@@ -1,0 +1,286 @@
+:root {
+  --ink: #f4e9dc;
+  --ink-dim: #c9b5a1;
+  --glass: rgba(28, 18, 12, 0.58);
+  --glass-strong: rgba(28, 18, 12, 0.74);
+  --edge: rgba(255, 226, 190, 0.16);
+  --accent: #ffb163;
+  --pad: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #17100b;
+}
+
+body {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  font: 400 16px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Static by decision — no idle animation on the illustration. */
+.hero {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.top-row,
+.chrome {
+  position: relative;
+  z-index: 1;
+}
+
+.top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--pad);
+  padding-top: max(var(--pad), env(safe-area-inset-top));
+}
+
+.top-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* The art's top zone is busy everywhere — each element carries its own backing. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+a.pill:hover { border-color: rgba(255, 226, 190, 0.4); }
+
+.muted { color: var(--ink-dim); }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6b5a4b;
+}
+.dot[data-state="live"] { background: #63d68a; box-shadow: 0 0 0 3px rgba(99, 214, 138, 0.18); }
+
+.chrome {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pad);
+  padding: var(--pad);
+  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
+}
+
+.panel {
+  border: 1px solid var(--edge);
+  border-radius: 1rem;
+  background: var(--glass-strong);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  padding: 0.9rem 1rem;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: min(22rem, 100%);
+}
+
+.now-playing { min-width: 0; }
+
+.track-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16rem;
+}
+
+.track-channel {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.ctrl {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ctrl:hover { border-color: var(--edge); }
+.ctrl:disabled { opacity: 0.35; cursor: default; }
+
+.ctrl-play {
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--accent);
+  color: #241408;
+}
+
+.ctrl svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.ctrl-play svg { fill: currentColor; stroke: currentColor; }
+.ctrl-play .icon-pause { fill: none; }
+
+/* The `hidden` attribute does not hide SVG elements, so swap on a state class. */
+.ctrl-play .icon-pause,
+.ctrl-play.is-playing .icon-play { display: none; }
+.ctrl-play.is-playing .icon-pause { display: block; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.recommend { width: min(20rem, 100%); }
+
+#recommend-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 100%;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field input {
+  border: 1px solid var(--edge);
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.45rem 0.6rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.field input::placeholder { color: #8b7867; }
+
+#rec-submit {
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 177, 99, 0.14);
+  color: var(--ink);
+  padding: 0.4rem 1rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#rec-submit:hover { background: rgba(255, 177, 99, 0.24); }
+#rec-submit:disabled { opacity: 0.5; cursor: default; }
+
+.rec-status {
+  flex: 1 1 100%;
+  margin: 0;
+  min-height: 1rem;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.rec-status[data-tone="error"] { color: #ff9f8d; }
+.rec-status[data-tone="ok"] { color: #9fe0b4; }
+
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.yt-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Narrow viewports crop hard (hero is ~2:1) — only ~23% of the width survives
+   at phone aspect, so this centres the dashboard shrine. Losing the far-left
+   scenery and the driver is the accepted tradeoff. */
+@media (max-width: 767px) {
+  .hero { object-position: 50% 50%; }
+
+  .chrome {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recommend { width: 100%; }
+
+  .track-title, .track-channel { max-width: 100%; }
+
+  .top-links { margin-left: 0; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
