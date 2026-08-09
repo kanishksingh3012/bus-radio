@@ -78,16 +78,28 @@
     els.progressTrack.setAttribute('aria-valuetext', '0:00 of 0:00');
   }
 
+  // The mobile handoff labels the right-hand time as remaining ("-2:56");
+  // desktop labels it as total duration. Keep the media query in sync with
+  // the 767px breakpoint in css/style.css.
+  var mqMobile = window.matchMedia('(max-width: 767px)');
+
+  function rightTimeLabel(current, duration) {
+    if (!duration) return '0:00';
+    return mqMobile.matches ? '-' + formatTime(duration - current) : formatTime(duration);
+  }
+
   // Screen readers get the actual times (aria-valuetext), not just a bare
   // percentage — aria-valuenow stays numeric for non-AT consumers.
   function setProgressDisplay(current, duration) {
     var pct = duration ? (current / duration) * 100 : 0;
     els.elapsed.textContent = formatTime(current);
-    els.total.textContent = formatTime(duration);
+    els.total.textContent = rightTimeLabel(current, duration);
     els.progressFill.style.width = pct + '%';
     els.progressTrack.setAttribute('aria-valuenow', String(Math.round(pct)));
     els.progressTrack.setAttribute('aria-valuetext', formatTime(current) + ' of ' + formatTime(duration));
   }
+
+  mqMobile.addEventListener('change', updateProgress);
 
   function updateProgress() {
     if (dragging) return; // don't fight the drag preview with the polling loop

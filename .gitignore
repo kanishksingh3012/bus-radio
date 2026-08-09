@@ -1,7 +1,12 @@
 .DS_Store
 
-# Redundant export bundle — same four files as design_handoff_glass_shelf_player/
+# Redundant export bundles — their contents are already unpacked into the
+# design_handoff_* folders
 Deluxe Express Bus Radio Platform.zip
+mobile Bus Radio Platform.zip
 
-# Byte-identical duplicate of the root "Frame 1.png" master (18 MB)
+# Byte-identical duplicates of the same 18 MB hero master. The design
+# reference HTML in each folder wants a local copy; the shipped site uses
+# assets/hero.webp instead, so these never need to be tracked.
 design_handoff_glass_shelf_player/Frame 1.png
+design_handoff_glass_shelf_mobile/Frame 1.png

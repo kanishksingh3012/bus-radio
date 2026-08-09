@@ -12,6 +12,10 @@
   --text-dim-3: rgba(255, 255, 255, 0.6);
   --text-dim-4: rgba(255, 255, 255, 0.62);
   --margin: 48px;
+  /* Shared by .shelf-row and .credit so the credit tag always sits on the
+     same horizontal line as the player card's bottom edge, at every
+     breakpoint, without having to update two rules in sync by hand. */
+  --shelf-bottom: 48px;
   --font-display: 'Anek Devanagari', system-ui, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, monospace;
 }
@@ -108,7 +112,7 @@ a:hover { color: var(--text); }
   position: fixed;
   left: var(--margin);
   right: var(--margin);
-  bottom: 48px;
+  bottom: var(--shelf-bottom);
   z-index: 1;
   display: flex;
   align-items: flex-end;
@@ -256,14 +260,17 @@ a:hover { color: var(--text); }
   background: var(--text);
 }
 
+/* Sits on the same horizontal line as the player card's bottom edge
+   (shares --shelf-bottom with .shelf-row) and matches the Spotify/YT Music
+   links in the status bar — same gold, same 13px, same font. */
 .credit {
   position: fixed;
   right: var(--margin);
-  bottom: 12px;
+  bottom: var(--shelf-bottom);
   z-index: 1;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim-3);
+  font-size: 13px;
+  color: var(--gold);
 }
 .credit:hover { color: var(--text); }
 
@@ -288,48 +295,144 @@ a:hover { color: var(--text); }
   .masthead-title { font-size: clamp(48px, 12vw, 96px); }
 }
 
+/* Mobile — design_handoff_glass_shelf_mobile/README.md, 390x844 frame.
+   Not just a squeezed desktop: different hero crop, its own scrim ramp,
+   a stacked card, and a scrubber handle. */
 @media (max-width: 767px) {
-  .hero { object-position: 50% 50%; }
+  :root { --margin: 24px; --shelf-bottom: 34px; }
 
-  :root { --margin: 20px; }
+  /* Mobile crop aims at the driver and steering wheel, not the centre shrine. */
+  .hero { object-position: 100% 37%; }
 
-  .status-bar { font-size: 10px; }
-  .top-links { gap: 12px; }
+  .scrim {
+    background: linear-gradient(180deg,
+      rgba(20, 14, 10, .7) 0%,
+      rgba(20, 14, 10, .6) 30%,
+      rgba(20, 14, 10, .22) 48%,
+      rgba(16, 10, 7, .72) 78%,
+      rgba(14, 9, 6, .88) 100%);
+  }
 
-  .masthead { top: 64px; }
-  .masthead-sub { font-size: 11px; letter-spacing: .2em; }
+  .status-bar { top: 14px; font-size: 13px; color: var(--text); }
+  .top-links { gap: 14px; }
+
+  .masthead { top: 196px; }
+  .masthead-title {
+    font-size: 46px;
+    line-height: .92;
+    letter-spacing: -0.02em;
+    text-shadow: 0 4px 26px rgba(0, 0, 0, .5);
+  }
+  .masthead-sub { margin-top: 12px; font-size: 11px; letter-spacing: .22em; }
 
   .shelf-row {
     flex-direction: column;
     align-items: stretch;
-    bottom: 24px;
   }
 
+  /* Art + track text share the first line; the transport block wraps below. */
   .player-card {
     width: 100%;
     height: auto;
     flex-wrap: wrap;
-    padding: 16px;
-    gap: 16px;
+    align-items: center;
+    padding: 22px 20px 24px;
+    gap: 20px 16px;
+    border-radius: 26px;
+    background: rgba(20, 15, 11, .55);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-color: rgba(255, 255, 255, .2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .2);
   }
 
-  .track-info { width: auto; flex: 1 1 auto; }
-  .transport { width: 100%; }
+  .art { width: 64px; height: 64px; border-radius: 14px; }
+
+  /* basis 0 (not auto) so long titles truncate instead of pushing the art
+     onto its own line */
+  .track-info { width: auto; flex: 1 1 0; }
+  .eyebrow { font-size: 10px; letter-spacing: .22em; color: rgba(255, 255, 255, .6); }
+  .track-title { margin-top: 4px; font-size: 21px; }
+  .track-channel { font-size: 14px; }
+
+  /* column-reverse puts the progress block above the controls without
+     reordering the markup (which keeps the desktop tab order intact). */
+  .transport {
+    width: auto;
+    flex: 1 0 100%;
+    flex-direction: column-reverse;
+    gap: 18px;
+  }
+
+  .progress-row {
+    flex-wrap: wrap;
+    gap: 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, .55);
+  }
+  /* The handoff sits the 4px bar inside a 20px row so the 14px handle has
+     room; these margins reproduce that rhythm without an extra wrapper. */
+  .progress-track {
+    order: -1;
+    flex: 1 0 100%;
+    height: 4px;
+    margin: 8px 0 14px;
+    background: rgba(255, 255, 255, .24);
+  }
+  #time-total { margin-left: auto; }
+
+  /* Scrubber handle rides the leading edge of the fill — mobile only. */
+  .progress-fill { position: relative; }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+  }
+
+  .controls { justify-content: center; gap: 26px; }
+  .ctrl {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .9);
+  }
+  .ctrl svg { width: 19px; height: 19px; }
+  .ctrl-play {
+    width: 74px;
+    height: 74px;
+    background: #f3ece1;
+    color: #1a1613;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  }
+  .ctrl-play svg { width: 24px; height: 24px; }
+
+  /* Card is full-width here, so the shared bottom line would put this
+     right on top of the play button — sits just below the card instead. */
+  .credit { bottom: 10px; }
 }
 
 /* Every positioned element here is `position: fixed` and sized off the
    1280x720 design frame with no regard for viewport height. On a short
    viewport (landscape phone, a small resized window) the masthead and the
    bottom player card can overlap — this compresses both so they never meet.
-   Deliberately after the width queries above so it wins when both apply. */
-@media (max-height: 480px) {
+   Scoped to >=768px: it collapses the card to a fixed-height single row,
+   which would truncate the stacked mobile layout and push the transport
+   controls out of view. Narrow-and-short is handled separately below. */
+@media (max-height: 480px) and (min-width: 768px) {
+  :root { --shelf-bottom: 14px; }
+
   .status-bar { top: 12px; }
 
   .masthead { top: 40px; }
   .masthead-title { font-size: clamp(28px, 8vw, 44px); line-height: .95; }
   .masthead-sub { margin-top: 6px; font-size: 10px; }
-
-  .shelf-row { bottom: 14px; }
 
   .player-card { height: 76px; gap: 20px; padding: 0 16px; }
   .art { width: 52px; height: 52px; }
@@ -337,6 +440,36 @@ a:hover { color: var(--text); }
   .track-title { font-size: 16px; }
   .transport { width: 220px; gap: 6px; }
   .ctrl-play { width: 40px; height: 40px; }
+}
+
+/* Narrow AND short — split-screen, a foldable, or a small resized window.
+   Keeps the stacked mobile layout (so the transport stays reachable) but
+   tightens the masthead and card enough that both still fit. */
+@media (max-height: 620px) and (max-width: 767px) {
+  :root { --shelf-bottom: 20px; }
+
+  /* Card is still full-width here so this can't follow --shelf-bottom
+     (same reasoning as the base mobile block) — and the gap below the card
+     is only 20px now, too tight for the inherited 10px/13px pairing without
+     touching the card, so both are pulled in further. */
+  .credit { bottom: 2px; font-size: 11px; }
+
+  .masthead { top: 56px; }
+  .masthead-title { font-size: 30px; }
+  .masthead-sub { margin-top: 8px; font-size: 10px; letter-spacing: .18em; }
+
+  .player-card { padding: 14px 16px 16px; gap: 12px; border-radius: 20px; }
+  .art { width: 48px; height: 48px; border-radius: 10px; }
+  .track-title { font-size: 17px; }
+  .track-channel { font-size: 12px; }
+
+  .transport { gap: 10px; }
+  .progress-track { margin: 6px 0 10px; }
+
+  .controls { gap: 18px; }
+  .ctrl { width: 44px; height: 44px; }
+  .ctrl-play { width: 56px; height: 56px; }
+  .ctrl-play svg { width: 18px; height: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
