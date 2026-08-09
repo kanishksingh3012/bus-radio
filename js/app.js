@@ -1,15 +1,22 @@
 /* Player. Audio comes from a hidden YouTube embed — never self-hosted files.
-   Video IDs come only from assets/playlist.json; never construct or guess them. */
+   Video IDs come only from assets/playlist.json; never construct or guess them.
+   Album art uses YouTube's own thumbnail for that same approved videoId
+   (img.youtube.com/vi/<id>/hqdefault.jpg) — no separate art source needed. */
 
 (function () {
   'use strict';
 
   var els = {
+    art: document.getElementById('track-art'),
     title: document.getElementById('track-title'),
     channel: document.getElementById('track-channel'),
     play: document.getElementById('play'),
     prev: document.getElementById('prev'),
-    next: document.getElementById('next')
+    next: document.getElementById('next'),
+    elapsed: document.getElementById('time-elapsed'),
+    total: document.getElementById('time-total'),
+    progressTrack: document.getElementById('progress-track'),
+    progressFill: document.getElementById('progress-fill')
   };
 
   var tracks = [];
@@ -18,6 +25,7 @@
   var apiReady = false;
   // Nothing reaches the player before a real click — autoplay-off is the intended UX.
   var started = false;
+  var progressTimer = null;
 
   function setControlsEnabled(on) {
     els.play.disabled = !on;
@@ -30,12 +38,61 @@
     if (!t) return;
     els.title.textContent = t.title;
     els.channel.textContent = t.channel;
+    els.art.src = 'https://img.youtube.com/vi/' + t.videoId + '/hqdefault.jpg';
+    resetProgress();
   }
 
   function renderPlayState(playing) {
     els.play.classList.toggle('is-playing', playing);
     els.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     els.play.setAttribute('aria-pressed', String(playing));
+    if (playing) startProgressLoop(); else stopProgressLoop();
+  }
+
+  function formatTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function resetProgress() {
+    els.elapsed.textContent = '0:00';
+    els.total.textContent = '0:00';
+    els.progressFill.style.width = '0%';
+    els.progressTrack.setAttribute('aria-valuenow', '0');
+  }
+
+  function updateProgress() {
+    if (!player || typeof player.getCurrentTime !== 'function') return;
+    var current = player.getCurrentTime() || 0;
+    var duration = player.getDuration() || 0;
+    var pct = duration ? (current / duration) * 100 : 0;
+    els.elapsed.textContent = formatTime(current);
+    els.total.textContent = formatTime(duration);
+    els.progressFill.style.width = pct + '%';
+    els.progressTrack.setAttribute('aria-valuenow', String(Math.round(pct)));
+  }
+
+  function startProgressLoop() {
+    stopProgressLoop();
+    progressTimer = setInterval(updateProgress, 500);
+    updateProgress();
+  }
+
+  function stopProgressLoop() {
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = null;
+  }
+
+  function seek(clientX) {
+    if (!player || typeof player.getDuration !== 'function') return;
+    var duration = player.getDuration() || 0;
+    if (!duration) return;
+    var rect = els.progressTrack.getBoundingClientRect();
+    var ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    player.seekTo(duration * ratio, true);
+    updateProgress();
   }
 
   function loadCurrent() {
@@ -125,6 +182,16 @@
   els.prev.addEventListener('click', function () { step(-1); });
   els.next.addEventListener('click', function () { step(1); });
 
+  els.progressTrack.addEventListener('click', function (e) { seek(e.clientX); });
+  els.progressTrack.addEventListener('keydown', function (e) {
+    if (!player || typeof player.getCurrentTime !== 'function') return;
+    var delta = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
+    if (!delta) return;
+    e.preventDefault();
+    player.seekTo(Math.max(0, player.getCurrentTime() + delta), true);
+    updateProgress();
+  });
+
   // Micro-interactions on the controls only. The illustration stays static.
   if (window.gsap && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     document.querySelectorAll('.ctrl').forEach(function (btn) {
@@ -145,7 +212,12 @@
 
   var clock = document.getElementById('clock');
   function tick() {
-    clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var d = new Date();
+    var h = d.getHours();
+    var period = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    var m = String(d.getMinutes()).padStart(2, '0');
+    clock.textContent = h + ':' + m + ' ' + period;
   }
   tick();
   setInterval(tick, 15000);

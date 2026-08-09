@@ -3,72 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Indian Bus Radio</title>
-<meta name="description" content="Ambient radio from the front seat of an Indian public bus.">
+<title>सवारी रेडियो — Sawaari Radio</title>
+<meta name="description" content="Non-stop highway radio from the front seat of an Indian public bus.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wght@400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <img class="hero" src="assets/hero.jpg" alt="Interior of an Indian public bus, looking past the driver through the windshield onto a roadside town.">
+<div class="scrim" aria-hidden="true"></div>
 
-<header class="top-row">
-  <div class="pill" id="clock" aria-live="off">--:--</div>
+<header class="status-bar">
+  <span id="clock">--:--</span>
 
-  <div class="pill" id="live-count">
+  <span class="live" id="live-count">
     <span class="dot" id="live-dot" data-state="offline"></span>
-    <span id="live-count-value">–</span>
-    <span class="muted">listening</span>
-  </div>
+    <span id="live-count-value">0</span> sawaari on board
+  </span>
 
   <nav class="top-links">
     <!-- TODO: replace with the real playlist URLs once they exist -->
-    <a class="pill" href="#" target="_blank" rel="noopener">Spotify</a>
-    <a class="pill" href="#" target="_blank" rel="noopener">YT Music</a>
+    <a href="#" target="_blank" rel="noopener">Spotify ↗</a>
+    <a href="#" target="_blank" rel="noopener">YT Music ↗</a>
   </nav>
 </header>
 
-<main class="chrome">
-  <section class="player panel" aria-label="Player">
-    <div class="now-playing">
+<div class="masthead" lang="hi">
+  <div class="masthead-title">सवारी<br>रेडियो</div>
+  <div class="masthead-sub">non-stop highway radio</div>
+</div>
+
+<main class="shelf-row">
+  <section class="player-card" aria-label="Player">
+    <img class="art" id="track-art" alt="" aria-hidden="true">
+
+    <div class="track-info">
+      <div class="eyebrow">Now playing</div>
       <div class="track-title" id="track-title">Press play</div>
       <div class="track-channel" id="track-channel">—</div>
     </div>
 
-    <div class="controls">
-      <button class="ctrl" id="prev" type="button" aria-label="Previous track">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6v12M19 6 9 12l10 6z"/></svg>
-      </button>
-      <button class="ctrl ctrl-play" id="play" type="button" aria-label="Play" aria-pressed="false">
-        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
-        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
-      </button>
-      <button class="ctrl" id="next" type="button" aria-label="Next track">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6v12M5 6l10 6-10 6z"/></svg>
-      </button>
+    <div class="transport">
+      <div class="controls">
+        <button class="ctrl" id="prev" type="button" aria-label="Previous track">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6v12M19 6 9 12l10 6z"/></svg>
+        </button>
+        <button class="ctrl ctrl-play" id="play" type="button" aria-label="Play" aria-pressed="false">
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+        </button>
+        <button class="ctrl" id="next" type="button" aria-label="Next track">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6v12M5 6l10 6-10 6z"/></svg>
+        </button>
+      </div>
+
+      <div class="progress-row">
+        <span id="time-elapsed">0:00</span>
+        <div class="progress-track" id="progress-track" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span id="time-total">0:00</span>
+      </div>
     </div>
   </section>
 
-  <section class="recommend panel" aria-label="Recommend a song">
-    <form id="recommend-form" novalidate>
-      <label class="field">
-        <span>Song</span>
-        <input type="text" id="rec-song" name="song" maxlength="120" required autocomplete="off" placeholder="Song name">
-      </label>
-      <label class="field">
-        <span>Artist or link</span>
-        <input type="text" id="rec-artist" name="artist" maxlength="200" autocomplete="off" placeholder="Optional">
-      </label>
-
-      <!-- honeypot: off-screen rather than display:none so naive bots still fill it -->
-      <div class="hp" aria-hidden="true">
-        <label for="rec-website">Website</label>
-        <input type="text" id="rec-website" name="website" tabindex="-1" autocomplete="off">
-      </div>
-
-      <button type="submit" id="rec-submit">Suggest</button>
-      <p class="rec-status" id="rec-status" role="status"></p>
-    </form>
-  </section>
 </main>
 
 <!-- hidden audio source; playback only, never visible -->
@@ -78,7 +77,6 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="js/app.js"></script>
 <script type="module" src="js/presence.js"></script>
-<script type="module" src="js/recommend.js"></script>
 
 </body>
 </html>

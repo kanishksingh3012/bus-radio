@@ -1,11 +1,20 @@
 :root {
-  --ink: #f4e9dc;
-  --ink-dim: #c9b5a1;
-  --glass: rgba(28, 18, 12, 0.58);
-  --glass-strong: rgba(28, 18, 12, 0.74);
-  --edge: rgba(255, 226, 190, 0.16);
-  --accent: #ffb163;
-  --pad: clamp(0.75rem, 2vw, 1.5rem);
+  /* Design tokens — from design_handoff_glass_shelf_player/README.md, "Glass Shelf v2" */
+  --scrim-dark: #12100e;
+  --card-bg: rgba(20, 15, 11, 0.62);
+  --card-border: rgba(255, 255, 255, 0.24);
+  --accent-a: #c8452f;
+  --accent-b: #e8a34a;
+  --live-green: #5fd07a;
+  --gold: #e8c46a;
+  --text: #fff;
+  --text-dim-1: rgba(255, 255, 255, 0.9);
+  --text-dim-2: rgba(255, 255, 255, 0.78);
+  --text-dim-3: rgba(255, 255, 255, 0.6);
+  --text-dim-4: rgba(255, 255, 255, 0.62);
+  --margin: 48px;
+  --font-display: 'Anek Devanagari', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -13,16 +22,22 @@
 html, body {
   margin: 0;
   min-height: 100%;
-  background: #17100b;
+  background: var(--scrim-dark);
 }
 
 body {
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  font: 400 16px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: var(--ink);
+  font-family: var(--font-display);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--gold); text-decoration: none; }
+a:hover { color: var(--text); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
 }
 
 /* Static by decision — no idle animation on the illustration. */
@@ -37,49 +52,39 @@ body {
   pointer-events: none;
 }
 
-.top-row,
-.chrome {
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 14, 10, .52) 0%, rgba(20, 14, 10, .06) 38%, rgba(20, 14, 10, .5) 100%);
+}
+
+.status-bar,
+.masthead,
+.shelf-row {
   position: relative;
   z-index: 1;
 }
 
-.top-row {
+.status-bar {
+  position: fixed;
+  top: 22px;
+  left: var(--margin);
+  right: var(--margin);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding: var(--pad);
-  padding-top: max(var(--pad), env(safe-area-inset-top));
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim-1);
 }
 
-.top-links {
+.live {
   display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-/* The art's top zone is busy everywhere — each element carries its own backing. */
-.pill {
-  display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: blur(10px) saturate(1.1);
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  color: var(--ink);
-  white-space: nowrap;
+  gap: 8px;
 }
-
-a.pill:hover { border-color: rgba(255, 226, 190, 0.4); }
-
-.muted { color: var(--ink-dim); }
 
 .dot {
   width: 7px;
@@ -87,171 +92,190 @@ a.pill:hover { border-color: rgba(255, 226, 190, 0.4); }
   border-radius: 50%;
   background: #6b5a4b;
 }
-.dot[data-state="live"] { background: #63d68a; box-shadow: 0 0 0 3px rgba(99, 214, 138, 0.18); }
+.dot[data-state="live"] {
+  background: var(--live-green);
+  animation: pulse 2.4s ease-in-out infinite;
+}
 
-.chrome {
-  margin-top: auto;
+.top-links {
   display: flex;
-  flex-wrap: wrap;
+  gap: 22px;
+}
+
+.masthead {
+  position: fixed;
+  top: 76px;
+  left: var(--margin);
+  z-index: 1;
+  max-width: calc(100vw - 2 * var(--margin));
+}
+
+.masthead-title {
+  font-weight: 800;
+  font-size: 96px;
+  line-height: .9;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+
+.masthead-sub {
+  margin-top: 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--text-dim-2);
+}
+
+.shelf-row {
+  position: fixed;
+  left: var(--margin);
+  right: var(--margin);
+  bottom: 48px;
+  z-index: 1;
+  display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--pad);
-  padding: var(--pad);
-  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-.panel {
-  border: 1px solid var(--edge);
-  border-radius: 1rem;
-  background: var(--glass-strong);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  padding: 0.9rem 1rem;
-}
-
-.player {
+.player-card {
+  height: 109px;
+  padding: 0 28px;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  min-width: min(22rem, 100%);
+  gap: 36px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .22);
+  width: fit-content;
+  max-width: 100%;
 }
 
-.now-playing { min-width: 0; }
+.art {
+  width: 78px;
+  height: 78px;
+  flex: none;
+  border-radius: 12px;
+  background: linear-gradient(140deg, var(--accent-a), var(--accent-b));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+  object-fit: cover;
+}
+
+.track-info {
+  width: 153px;
+  flex: none;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--text-dim-4);
+}
 
 .track-title {
-  font-size: 0.95rem;
+  margin-top: 5px;
+  font-size: 20px;
   font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 16rem;
 }
 
 .track-channel {
-  font-size: 0.78rem;
-  color: var(--ink-dim);
+  font-size: 13px;
+  color: var(--text-dim-3);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 16rem;
+}
+
+.transport {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
+  gap: 20px;
+  color: var(--text-dim-1);
 }
 
 .ctrl {
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 50%;
+  border: none;
   background: transparent;
-  color: var(--ink);
+  color: inherit;
   cursor: pointer;
+  border-radius: 50%;
 }
 
-.ctrl:hover { border-color: var(--edge); }
-.ctrl:disabled { opacity: 0.35; cursor: default; }
-
-.ctrl-play {
-  width: 2.75rem;
-  height: 2.75rem;
-  background: var(--accent);
-  color: #241408;
-}
+.ctrl:disabled { opacity: .35; cursor: default; }
 
 .ctrl svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1rem;
+  height: 1rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
-.ctrl-play svg { fill: currentColor; stroke: currentColor; }
-.ctrl-play .icon-pause { fill: none; }
+.ctrl-play {
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, .92);
+  color: #1a1613;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+}
+.ctrl-play svg { fill: currentColor; stroke: currentColor; width: 16px; height: 16px; }
 
 /* The `hidden` attribute does not hide SVG elements, so swap on a state class. */
 .ctrl-play .icon-pause,
 .ctrl-play.is-playing .icon-play { display: none; }
 .ctrl-play.is-playing .icon-pause { display: block; }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.recommend { width: min(20rem, 100%); }
-
-#recommend-form {
+.progress-row {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim-3);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1 1 100%;
-  font-size: 0.72rem;
-  color: var(--ink-dim);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.field input {
-  border: 1px solid var(--edge);
-  border-radius: 0.5rem;
-  background: rgba(0, 0, 0, 0.28);
-  padding: 0.45rem 0.6rem;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.85rem;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.field input::placeholder { color: #8b7867; }
-
-#rec-submit {
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: rgba(255, 177, 99, 0.14);
-  color: var(--ink);
-  padding: 0.4rem 1rem;
-  font: inherit;
-  font-size: 0.85rem;
+.progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .26);
   cursor: pointer;
 }
 
-#rec-submit:hover { background: rgba(255, 177, 99, 0.24); }
-#rec-submit:disabled { opacity: 0.5; cursor: default; }
-
-.rec-status {
-  flex: 1 1 100%;
-  margin: 0;
-  min-height: 1rem;
-  font-size: 0.75rem;
-  color: var(--ink-dim);
-}
-
-.rec-status[data-tone="error"] { color: #ff9f8d; }
-.rec-status[data-tone="ok"] { color: #9fe0b4; }
-
-.hp {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+.progress-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text);
 }
 
 .yt-hidden {
@@ -263,22 +287,46 @@ a.pill:hover { border-color: rgba(255, 226, 190, 0.4); }
   pointer-events: none;
 }
 
-/* Narrow viewports crop hard (hero is ~2:1) — only ~23% of the width survives
-   at phone aspect, so this centres the dashboard shrine. Losing the far-left
-   scenery and the driver is the accepted tradeoff. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Design frame is 1280x720; below that the masthead and status bar are
+   scaled down and the shelf stacks so the card never exceeds the viewport.
+   The far-left/right scenery is lost on narrow viewports — accepted tradeoff. */
+@media (max-width: 900px) {
+  .masthead-title { font-size: clamp(48px, 12vw, 96px); }
+}
+
 @media (max-width: 767px) {
   .hero { object-position: 50% 50%; }
 
-  .chrome {
+  :root { --margin: 20px; }
+
+  .status-bar { font-size: 10px; }
+  .live { gap: 6px; text-align: center; }
+  .top-links { gap: 12px; }
+
+  .masthead { top: 64px; }
+  .masthead-sub { font-size: 11px; letter-spacing: .2em; }
+
+  .shelf-row {
     flex-direction: column;
     align-items: stretch;
+    bottom: 24px;
   }
 
-  .recommend { width: 100%; }
+  .player-card {
+    width: 100%;
+    height: auto;
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 16px;
+  }
 
-  .track-title, .track-channel { max-width: 100%; }
-
-  .top-links { margin-left: 0; width: 100%; }
+  .track-info { width: auto; flex: 1 1 auto; }
+  .transport { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

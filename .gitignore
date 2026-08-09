@@ -1,1 +1,7 @@
 .DS_Store
+
+# Redundant export bundle — same four files as design_handoff_glass_shelf_player/
+Deluxe Express Bus Radio Platform.zip
+
+# Byte-identical duplicate of the root "Frame 1.png" master (18 MB)
+design_handoff_glass_shelf_player/Frame 1.png
