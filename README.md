@@ -52,9 +52,10 @@ Then open `http://localhost:4173`.
 
 Audio is embedded exclusively via hidden YouTube players — never self-hosted MP3s or video files. Every video ID in `assets/playlist.json` is sourced from a manually curated, human-confirmed YouTube playlist; none are auto-generated or guessed. This keeps the site on the right side of the line: embedding official YouTube uploads is standard practice, whereas re-hosting the audio itself would not be.
 
-## Known limitation
+## Known limitations
 
-Some ad/privacy blockers — notably Brave's Shields, even in Private windows — block YouTube's player API outright by default for some users. There's no client-side workaround for this (the API has no alternate domain to fall back to); the site detects it and explains what's happening rather than leaving a dead play button.
+- **Some ad/privacy blockers** — notably Brave's Shields, even in Private windows — block YouTube's player API outright by default for some users. There's no client-side workaround for this (the API has no alternate domain to fall back to); the site detects it and explains what's happening rather than leaving a dead play button.
+- **Mobile background/lock-screen playback doesn't survive** — audio stops when the browser is backgrounded or the phone is locked (confirmed on iPhone Safari). Desktop is the primary intended use case and isn't affected by this, since desktop browsers don't suspend background tabs' audio the way mobile OSes suspend backgrounded apps.
 
 ---
 
