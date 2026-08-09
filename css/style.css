@@ -1,11 +1,10 @@
 :root {
   /* Design tokens — from design_handoff_glass_shelf_player/README.md, "Glass Shelf v2" */
   --scrim-dark: #12100e;
-  --card-bg: rgba(20, 15, 11, 0.62);
+  --card-bg: rgba(20, 15, 11, 0.52);
   --card-border: rgba(255, 255, 255, 0.24);
   --accent-a: #c8452f;
   --accent-b: #e8a34a;
-  --live-green: #5fd07a;
   --gold: #e8c46a;
   --text: #fff;
   --text-dim-1: rgba(255, 255, 255, 0.9);
@@ -34,11 +33,6 @@ body {
 
 a { color: var(--gold); text-decoration: none; }
 a:hover { color: var(--text); }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .35; }
-}
 
 /* Static by decision — no idle animation on the illustration. */
 .hero {
@@ -78,23 +72,6 @@ a:hover { color: var(--text); }
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--text-dim-1);
-}
-
-.live {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #6b5a4b;
-}
-.dot[data-state="live"] {
-  background: var(--live-green);
-  animation: pulse 2.4s ease-in-out infinite;
 }
 
 .top-links {
@@ -268,6 +245,7 @@ a:hover { color: var(--text); }
   border-radius: 2px;
   background: rgba(255, 255, 255, .26);
   cursor: pointer;
+  touch-action: none; /* dragging the thin bar shouldn't trigger page scroll on touch */
 }
 
 .progress-fill {
@@ -277,6 +255,17 @@ a:hover { color: var(--text); }
   border-radius: 2px;
   background: var(--text);
 }
+
+.credit {
+  position: fixed;
+  right: var(--margin);
+  bottom: 12px;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim-3);
+}
+.credit:hover { color: var(--text); }
 
 .yt-hidden {
   position: absolute;
@@ -305,7 +294,6 @@ a:hover { color: var(--text); }
   :root { --margin: 20px; }
 
   .status-bar { font-size: 10px; }
-  .live { gap: 6px; text-align: center; }
   .top-links { gap: 12px; }
 
   .masthead { top: 64px; }
@@ -327,6 +315,28 @@ a:hover { color: var(--text); }
 
   .track-info { width: auto; flex: 1 1 auto; }
   .transport { width: 100%; }
+}
+
+/* Every positioned element here is `position: fixed` and sized off the
+   1280x720 design frame with no regard for viewport height. On a short
+   viewport (landscape phone, a small resized window) the masthead and the
+   bottom player card can overlap — this compresses both so they never meet.
+   Deliberately after the width queries above so it wins when both apply. */
+@media (max-height: 480px) {
+  .status-bar { top: 12px; }
+
+  .masthead { top: 40px; }
+  .masthead-title { font-size: clamp(28px, 8vw, 44px); line-height: .95; }
+  .masthead-sub { margin-top: 6px; font-size: 10px; }
+
+  .shelf-row { bottom: 14px; }
+
+  .player-card { height: 76px; gap: 20px; padding: 0 16px; }
+  .art { width: 52px; height: 52px; }
+  .track-info { width: 130px; }
+  .track-title { font-size: 16px; }
+  .transport { width: 220px; gap: 6px; }
+  .ctrl-play { width: 40px; height: 40px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

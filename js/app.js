@@ -26,6 +26,9 @@
   // Nothing reaches the player before a real click — autoplay-off is the intended UX.
   var started = false;
   var progressTimer = null;
+  var consecutiveErrors = 0;
+  var apiTimeoutId = null;
+  var dragging = false;
 
   function setControlsEnabled(on) {
     els.play.disabled = !on;
@@ -36,10 +39,21 @@
   function renderTrack() {
     var t = tracks[index];
     if (!t) return;
-    els.title.textContent = t.title;
-    els.channel.textContent = t.channel;
+    els.title.textContent = t.title || 'Untitled track';
+    els.channel.textContent = t.channel || 'Unknown artist';
     els.art.src = 'https://img.youtube.com/vi/' + t.videoId + '/hqdefault.jpg';
     resetProgress();
+  }
+
+  // YouTube returns a 120x90 grey "no thumbnail" placeholder (HTTP 200, not
+  // a 404) for videos with no real thumbnail, so a failed <img> load alone
+  // won't catch it — check the actual image dimensions too.
+  els.art.addEventListener('error', clearArt);
+  els.art.addEventListener('load', function () {
+    if (els.art.naturalWidth && els.art.naturalWidth <= 120) clearArt();
+  });
+  function clearArt() {
+    els.art.removeAttribute('src');
   }
 
   function renderPlayState(playing) {
@@ -61,17 +75,24 @@
     els.total.textContent = '0:00';
     els.progressFill.style.width = '0%';
     els.progressTrack.setAttribute('aria-valuenow', '0');
+    els.progressTrack.setAttribute('aria-valuetext', '0:00 of 0:00');
   }
 
-  function updateProgress() {
-    if (!player || typeof player.getCurrentTime !== 'function') return;
-    var current = player.getCurrentTime() || 0;
-    var duration = player.getDuration() || 0;
+  // Screen readers get the actual times (aria-valuetext), not just a bare
+  // percentage — aria-valuenow stays numeric for non-AT consumers.
+  function setProgressDisplay(current, duration) {
     var pct = duration ? (current / duration) * 100 : 0;
     els.elapsed.textContent = formatTime(current);
     els.total.textContent = formatTime(duration);
     els.progressFill.style.width = pct + '%';
     els.progressTrack.setAttribute('aria-valuenow', String(Math.round(pct)));
+    els.progressTrack.setAttribute('aria-valuetext', formatTime(current) + ' of ' + formatTime(duration));
+  }
+
+  function updateProgress() {
+    if (dragging) return; // don't fight the drag preview with the polling loop
+    if (!player || typeof player.getCurrentTime !== 'function') return;
+    setProgressDisplay(player.getCurrentTime() || 0, player.getDuration() || 0);
   }
 
   function startProgressLoop() {
@@ -85,14 +106,16 @@
     progressTimer = null;
   }
 
-  function seek(clientX) {
-    if (!player || typeof player.getDuration !== 'function') return;
-    var duration = player.getDuration() || 0;
-    if (!duration) return;
+  function ratioFromClientX(clientX) {
     var rect = els.progressTrack.getBoundingClientRect();
-    var ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    player.seekTo(duration * ratio, true);
-    updateProgress();
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  }
+
+  // While dragging, only update the visual preview locally — calling
+  // player.seekTo() on every pointermove would spam the YouTube postMessage
+  // bridge and stutter. The real seek happens once, on release.
+  function previewScrub(ratio, duration) {
+    setProgressDisplay(duration * ratio, duration);
   }
 
   function loadCurrent() {
@@ -129,12 +152,25 @@
       step(1);
       return;
     }
+    if (e.data === YT.PlayerState.PLAYING) consecutiveErrors = 0;
     renderPlayState(e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING);
   }
 
   function onError() {
+    consecutiveErrors++;
+
+    // Every track in the playlist has now failed back-to-back (or it's a
+    // single-track playlist that failed) — stop instead of looping forever.
+    if (consecutiveErrors >= tracks.length) {
+      stopProgressLoop();
+      setControlsEnabled(false);
+      els.title.textContent = 'Nothing playable right now';
+      els.channel.textContent = 'All tracks failed to load';
+      return;
+    }
+
     els.channel.textContent = 'Track unavailable — skipping';
-    if (tracks.length > 1) setTimeout(function () { step(1); }, 1200);
+    setTimeout(function () { step(1); }, 1200);
   }
 
   function buildPlayer() {
@@ -143,7 +179,10 @@
       width: '1',
       playerVars: { playsinline: 1 },
       events: {
-        onReady: function () { setControlsEnabled(true); },
+        onReady: function () {
+          setControlsEnabled(true);
+          renderTrack(); // in case the API-blocked message overwrote the title while this was loading
+        },
         onStateChange: onStateChange,
         onError: onError
       }
@@ -156,6 +195,7 @@
 
   window.onYouTubeIframeAPIReady = function () {
     apiReady = true;
+    if (apiTimeoutId) { clearTimeout(apiTimeoutId); apiTimeoutId = null; }
     maybeInit();
   };
 
@@ -167,10 +207,30 @@
       return r.json();
     })
     .then(function (data) {
-      tracks = data.filter(function (t) { return t && t.videoId; });
+      if (!Array.isArray(data)) throw new Error('playlist is not an array');
+
+      tracks = data.filter(function (t, i) {
+        if (!t || !t.videoId) {
+          console.warn('[player] playlist entry #' + i + ' has no videoId — skipped', t);
+          return false;
+        }
+        if (!t.title) console.warn('[player] playlist entry #' + i + ' (' + t.videoId + ') has no title');
+        if (!t.channel) console.warn('[player] playlist entry #' + i + ' (' + t.videoId + ') has no channel');
+        return true;
+      });
+
       if (!tracks.length) throw new Error('playlist empty');
       renderTrack();
       maybeInit();
+
+      // youtube.com/iframe_api is a common ad-blocker target. If it hasn't
+      // called back by now, playback is blocked — say so instead of leaving
+      // a permanently-disabled play button with no explanation.
+      apiTimeoutId = setTimeout(function () {
+        if (apiReady) return;
+        els.title.textContent = 'Playback blocked';
+        els.channel.textContent = 'Check your ad blocker or connection, then reload';
+      }, 6000);
     })
     .catch(function (err) {
       console.error('[player]', err);
@@ -182,13 +242,43 @@
   els.prev.addEventListener('click', function () { step(-1); });
   els.next.addEventListener('click', function () { step(1); });
 
-  els.progressTrack.addEventListener('click', function (e) { seek(e.clientX); });
+  // Pointer Events unify mouse + touch: pointerdown starts the drag and
+  // shows an immediate preview (this also covers a plain click/tap, which
+  // is just a pointerdown+pointerup at the same spot), pointermove updates
+  // the preview only, pointerup commits the real seek.
+  els.progressTrack.addEventListener('pointerdown', function (e) {
+    if (!player || typeof player.getDuration !== 'function' || !player.getDuration()) return;
+    dragging = true;
+    els.progressTrack.setPointerCapture(e.pointerId);
+    previewScrub(ratioFromClientX(e.clientX), player.getDuration());
+  });
+  els.progressTrack.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    previewScrub(ratioFromClientX(e.clientX), player.getDuration());
+  });
+  function commitScrub(e) {
+    if (!dragging) return;
+    dragging = false;
+    var duration = player.getDuration() || 0;
+    player.seekTo(duration * ratioFromClientX(e.clientX), true);
+    updateProgress();
+  }
+  els.progressTrack.addEventListener('pointerup', commitScrub);
+  els.progressTrack.addEventListener('pointercancel', function () { dragging = false; });
+
   els.progressTrack.addEventListener('keydown', function (e) {
     if (!player || typeof player.getCurrentTime !== 'function') return;
-    var delta = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
-    if (!delta) return;
+    var duration = player.getDuration() || 0;
+    var target = null;
+
+    if (e.key === 'ArrowRight') target = player.getCurrentTime() + 5;
+    else if (e.key === 'ArrowLeft') target = player.getCurrentTime() - 5;
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = duration;
+    else return;
+
     e.preventDefault();
-    player.seekTo(Math.max(0, player.getCurrentTime() + delta), true);
+    player.seekTo(Math.min(duration, Math.max(0, target)), true);
     updateProgress();
   });
 
