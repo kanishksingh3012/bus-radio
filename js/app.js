@@ -59,6 +59,26 @@
     els.art.src = 'https://img.youtube.com/vi/' + t.videoId + '/hqdefault.jpg';
     els.blockedHelp.hidden = true;
     resetProgress();
+    updateMediaSession(t);
+  }
+
+  // Registers this page as a real media session with the OS — lock-screen
+  // and Control Center now-playing controls, and (the actual reason this
+  // was added) a signal to iOS that this tab is legitimately playing media
+  // it should be more lenient about suspending when backgrounded. UNVERIFIED
+  // whether that leniency actually extends to audio playing inside a
+  // cross-origin iframe (the YouTube embed) rather than a media element
+  // this page owns directly — needs testing on a real device. If it turns
+  // out not to help, this is still worth keeping for the lock-screen
+  // controls alone.
+  function updateMediaSession(t) {
+    if (!('mediaSession' in navigator) || !t) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: t.title || 'Untitled track',
+      artist: t.channel || 'Unknown artist',
+      album: 'सवारी रेडियो — Sawaari Radio',
+      artwork: [{ src: 'https://img.youtube.com/vi/' + t.videoId + '/hqdefault.jpg', sizes: '480x360', type: 'image/jpeg' }]
+    });
   }
 
   // YouTube returns a 120x90 grey "no thumbnail" placeholder (HTTP 200, not
@@ -76,6 +96,7 @@
     els.play.classList.toggle('is-playing', playing);
     els.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     els.play.setAttribute('aria-pressed', String(playing));
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
     if (playing) startProgressLoop(); else stopProgressLoop();
   }
 
@@ -277,6 +298,19 @@
       els.title.textContent = 'Playlist unavailable';
       els.channel.textContent = '—';
     });
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', function () {
+      if (!player) return;
+      if (!started) { started = true; loadCurrent(); return; }
+      player.playVideo();
+    });
+    navigator.mediaSession.setActionHandler('pause', function () {
+      if (player) player.pauseVideo();
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', function () { step(-1); });
+    navigator.mediaSession.setActionHandler('nexttrack', function () { step(1); });
+  }
 
   els.play.addEventListener('click', togglePlay);
   els.prev.addEventListener('click', function () { step(-1); });
