@@ -16,7 +16,8 @@
     elapsed: document.getElementById('time-elapsed'),
     total: document.getElementById('time-total'),
     progressTrack: document.getElementById('progress-track'),
-    progressFill: document.getElementById('progress-fill')
+    progressFill: document.getElementById('progress-fill'),
+    blockedHelp: document.getElementById('blocked-help')
   };
 
   var tracks = [];
@@ -30,6 +31,20 @@
   var apiTimeoutId = null;
   var dragging = false;
 
+  // Fisher-Yates. Runs once per page load, right after tracks are fetched —
+  // reshuffles are inherent to "reload the page," and since tracks always
+  // come from the current assets/playlist.json (never cached), an added or
+  // removed song is picked up automatically on the very next load.
+  function shuffleInPlace(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
+  }
+
   function setControlsEnabled(on) {
     els.play.disabled = !on;
     els.prev.disabled = !on;
@@ -42,6 +57,7 @@
     els.title.textContent = t.title || 'Untitled track';
     els.channel.textContent = t.channel || 'Unknown artist';
     els.art.src = 'https://img.youtube.com/vi/' + t.videoId + '/hqdefault.jpg';
+    els.blockedHelp.hidden = true;
     resetProgress();
   }
 
@@ -189,6 +205,10 @@
     player = new YT.Player('yt-player', {
       height: '1',
       width: '1',
+      // Privacy-enhanced domain: doesn't set tracking cookies until the
+      // user actually plays, and several ad/privacy blockers that block
+      // regular youtube.com embeds specifically allow this one.
+      host: 'https://www.youtube-nocookie.com',
       playerVars: { playsinline: 1 },
       events: {
         onReady: function () {
@@ -232,16 +252,24 @@
       });
 
       if (!tracks.length) throw new Error('playlist empty');
+      shuffleInPlace(tracks);
       renderTrack();
       maybeInit();
 
-      // youtube.com/iframe_api is a common ad-blocker target. If it hasn't
-      // called back by now, playback is blocked — say so instead of leaving
-      // a permanently-disabled play button with no explanation.
+      // youtube.com/iframe_api is a common ad/privacy-blocker target
+      // (confirmed in the wild: Brave's Shields blocks it by default for
+      // some users, even in Private windows, since Shields is a core
+      // browser feature there, not an extension). If it hasn't called back
+      // by now, playback is blocked — say so instead of leaving a
+      // permanently-disabled play button with no explanation. The full
+      // explanation goes in .blocked-help, not .track-channel, because
+      // track-channel truncates with ellipsis and this needs to stay readable.
       apiTimeoutId = setTimeout(function () {
         if (apiReady) return;
         els.title.textContent = 'Playback blocked';
-        els.channel.textContent = 'Check your ad blocker or connection, then reload';
+        els.channel.textContent = 'See note below';
+        els.blockedHelp.textContent = 'Likely an ad/privacy blocker (e.g. Brave Shields) or your network blocking YouTube. Try turning it off for this site, or use a different browser, then reload.';
+        els.blockedHelp.hidden = false;
       }, 6000);
     })
     .catch(function (err) {

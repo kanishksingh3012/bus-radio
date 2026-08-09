@@ -122,9 +122,13 @@ a:hover { color: var(--text); }
 }
 
 .player-card {
-  height: 109px;
+  /* min-height (not height) + wrap so .blocked-help can drop onto its own
+     row and the card grows to fit it, without affecting the normal case
+     where that row stays hidden and the card renders at the same 109px. */
+  min-height: 109px;
   padding: 0 28px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 36px;
   border-radius: 18px;
@@ -134,7 +138,14 @@ a:hover { color: var(--text); }
   border: 1px solid var(--card-border);
   box-shadow: 0 18px 50px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .22);
   width: fit-content;
-  max-width: 100%;
+  /* fit-content alone isn't enough once a wrapping paragraph (.blocked-help)
+     is in play — a flex container's shrink-to-fit width calculation can
+     size itself to a wrapped item's unwrapped (max-content) width instead
+     of the intended narrower line, ballooning the card. This caps it at
+     the same width the normal 3-item row already computes to (~661px),
+     so the card never grows wider than usual — the help text just wraps
+     within that fixed width instead. */
+  max-width: min(100%, 665px);
 }
 
 .art {
@@ -258,6 +269,25 @@ a:hover { color: var(--text); }
   height: 100%;
   border-radius: 2px;
   background: var(--text);
+}
+
+/* Only shown when playback is actually blocked — drops onto its own full
+   row (`flex: 1 0 100%` needs .player-card's `flex-wrap: wrap`) so the
+   message can wrap instead of truncating like the title/channel lines. */
+.blocked-help {
+  /* flex-shrink must be 1 (not 0, unlike the other rows that use this
+     100%-row trick) — shrink:0 pins the item at its max-content (unwrapped)
+     width no matter what min-width says, which is what actually caused the
+     card to balloon to fit the sentence on one line. min-width:0 alone,
+     without also fixing shrink, did nothing. */
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 12px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--accent-b);
 }
 
 /* Sits on the same horizontal line as the player card's bottom edge
