@@ -282,7 +282,14 @@ a:hover { color: var(--text); }
      without also fixing shrink, did nothing. */
   flex: 1 1 100%;
   min-width: 0;
-  margin: 12px 0 4px;
+  /* No top margin: .player-card's own `gap` already inserts a row-gap
+     above this wrapped line (that's just how `gap` works once a flex
+     container wraps) — an additional top margin here was stacking on top
+     of that, pushing this row too far from the row above and making the
+     card read as top-heavy/unbalanced. padding-top is what actually
+     separates the divider from the text; margin-bottom is breathing room
+     before the card's own edge, since .player-card has zero vertical padding. */
+  margin: 0 0 16px;
   padding-top: 12px;
   border-top: 1px solid var(--card-border);
   font-size: 12px;
