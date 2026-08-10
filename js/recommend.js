@@ -9,7 +9,7 @@
   // TODO: fill in once the Apps Script Web App is deployed — see CLAUDE.md
   // for setup steps. Ends in /exec. Submissions are disabled with a clear
   // message until this is a real URL.
-  var SHEET_ENDPOINT = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+  var SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz6ZZgs97lWS7_KnPJoCsl3iPEFBNyQ11BdQJx6xBUwVzDyOpbgM41cX_y2DO7nz9Hm/exec';
   var isConfigured = SHEET_ENDPOINT.indexOf('YOUR_DEPLOYMENT_ID') === -1;
 
   var toggle = document.getElementById('suggest-toggle');
