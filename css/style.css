@@ -147,9 +147,15 @@ a:hover { color: var(--text); }
 
 .rec-status {
   margin: 8px 0 0;
-  min-height: 1rem;
   font-size: 12px;
   color: var(--text-dim-3);
+}
+/* Reserving height for this even when empty (the old min-height) left a
+   visually disproportionate dead strip at the bottom of this small panel —
+   only take up space once there's actually a message to show. */
+.rec-status:empty {
+  margin: 0;
+  display: none;
 }
 .rec-status[data-tone="error"] { color: #ff9f8d; }
 .rec-status[data-tone="ok"] { color: #9fe0b4; }
