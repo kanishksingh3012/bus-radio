@@ -10,7 +10,7 @@ There are **two** handoffs, and both are authoritative for their own breakpoint 
 
 ## What this is
 
-Single-page ambient audio site. One full-bleed illustrated scene (interior of an Indian public bus, POV from behind the driver) fills the viewport. Music plays from a curated playlist, default off. Floating UI sits over the illustration. Mechanic is inspired by saloon.wtf (illustrated scene + audio player, originally + live listener count + community song submissions) — different setting, not a clone. V1 ships player-only; live count and recommendations are both deferred (see Constraints).
+Single-page ambient audio site. One full-bleed illustrated scene (interior of an Indian public bus, POV from behind the driver) fills the viewport. Music plays from a curated playlist, default off. Floating UI sits over the illustration. Mechanic is inspired by saloon.wtf (illustrated scene + audio player, originally + live listener count + community song submissions) — different setting, not a clone. Live count is deferred (see Constraints); song suggestions are live, backed by a Google Sheet.
 
 Typography: **Anek Devanagari** (display/masthead, Devanagari + Latin) + **DM Mono** (status bar, timestamps, eyebrow labels), both via Google Fonts CDN.
 
@@ -19,7 +19,7 @@ Typography: **Anek Devanagari** (display/masthead, Devanagari + Latin) + **DM Mo
 - **Base:** vanilla HTML/CSS/JS
 - **Reactivity escalation path:** if state-syncing across the player gets unwieldy in vanilla, add **Alpine.js via CDN** (`<script src="...alpinejs...">`) — no bundler, no npm. Do NOT introduce React, Vue, Svelte, or any build-step framework. That decision is closed.
 - **Motion:** GSAP (CDN), for UI micro-interactions only (button hovers, etc.) — NOT for the background, which is static (see Constraints).
-- **Backend:** none currently wired. Supabase (Realtime Presence for live count, Postgres for recommendations) is the planned backend if/when either feature returns — see Constraints. No custom server either way.
+- **Backend:** a single Google Apps Script Web App (bound to a Google Sheet) for song suggestions — see Constraints. No database, no Supabase currently wired (Realtime Presence for live count is the planned backend if/when that feature returns). No custom server either way.
 - **Audio:** YouTube IFrame Player API, hidden player element, custom controls. No API key needed at runtime — playback doesn't require one, only the offline playlist-curation tool did.
 - **Hosting:** Vercel. Import the GitHub repo in the Vercel dashboard, framework preset "Other", no build command/output dir — push static files directly, no CI build step required.
 
@@ -29,6 +29,7 @@ Typography: **Anek Devanagari** (display/masthead, Devanagari + Latin) + **DM Mo
 index.html
 /css/style.css
 /js/app.js          — player state, controls, progress/seek
+/js/recommend.js     — song suggestions, POSTs to a Google Apps Script Web App
 /assets/hero.webp    — background illustration (upscaled)
 /assets/playlist.json — {title, channel, videoId}[]
 /design_handoff_glass_shelf_player/ — desktop design source of truth (README.md + static HTML reference)
@@ -57,7 +58,10 @@ index.html
 - **Native OS chrome in the mobile mock is deliberately NOT implemented.** The handoff draws a battery/signal glyph and a home-indicator bar, but its own README says to prefer the real OS status bar — this is a web page, so faking either would be wrong. The existing clock stays; the glyph and home indicator are skipped.
 - **Losing the far-left/far-right scenery on narrow viewports is an accepted tradeoff, not a bug.**
 - **Live listener count is REMOVED from the V1 UI** (removed 2026-08-09 by request — too early-stage; showing "1 sawaari on board" or "0" undersells it more than showing nothing does. Revisit once there's real, non-trivial traffic). `js/presence.js`, `js/supabase.js`, the `.live`/`.dot` markup and CSS, and the `@keyframes pulse` all still exist in git history — recover from there rather than rewriting if it comes back. The original rule still stands if it does: Presence is ephemeral (resets to 0 with no active connections), NOT a persistent "all-time listeners" counter — don't conflate the two.
-- **Song recommendations are REMOVED from the V1 UI** (removed 2026-08-09 by request; the Glass Shelf v2 design is player-only). `js/recommend.js`, the form markup, its CSS, and the `recommendations` table SQL all still exist in git history — recover from there rather than rewriting if it comes back. The original rule still stands if it does: never auto-publish, `insert` with `status: 'pending'`, honeypot for spam, manual approval via Supabase's table editor, no admin UI.
+- **Song recommendations are back, as of 2026-08-09, backed by a Google Sheet instead of Supabase** — explicitly requested "pretty simple, no Supabase." `js/recommend.js` POSTs to a Google Apps Script Web App URL (`SHEET_ENDPOINT`, still a placeholder — deploy steps are in the file's header comment); the Apps Script just does `sheet.appendRow([new Date(), data.song, data.artist])`. This is a lightweight inbox for manual review, not a live-editing feature — nothing is ever auto-published to the playlist. Still has the honeypot, still degrades gracefully with a clear message when unconfigured, same as the old Supabase version did. UI is a small toggle button in the status bar next to Spotify/YT Music (`#suggest-toggle` / `#suggest-panel`), deliberately *not* a card next to the player — keeps it independent of `.player-card`/`.credit`'s layout entirely, closes on outside-click or Escape. The pre-Sheets Supabase version (`recommendations` table SQL, `insert` with `status: 'pending'`) is still in git history at commit `230281d` if useful for reference, but the Sheets approach is now the live one — don't revert to it without being asked.
+- **Two real bugs found while rebuilding this, both worth knowing about if you touch it again:**
+  - The honeypot's `.hp` CSS rule (`position:absolute; left:-9999px`) was never re-added when the old recommend form's CSS was stripped during the Sawaari rebrand — the field was rendering fully visible until caught in testing. If a honeypot field ever shows up on screen, check this rule exists before assuming it's a JS/logic bug.
+  - `.top-links` holding 3 items (Spotify/YT Music/Suggest a song) instead of 2 crowds the clock down to a ~2px gap on mobile at the old fixed `gap`. Fixed with `flex-wrap: wrap; justify-content: flex-end;` in the mobile block so it drops to its own right-aligned second line instead. If you add a 4th top-links item, re-check this doesn't need further adjustment.
 - **If/when Supabase comes back (live count or recommendations):** the anon key is meant to be public/client-exposed — that's how Supabase's security model works (RLS handles real protection). Don't over-engineer hiding it. If any other secret is ever introduced, that's a different conversation.
 
 ## Explicitly out of scope for V1
@@ -65,7 +69,7 @@ index.html
 - Multi-playlist / station switching
 - User accounts or login
 - Live listener count (see Constraints — removed until there's real traffic to show)
-- Song recommendations + editing/removing already-approved ones from the public UI
+- Editing/removing already-submitted song suggestions from the public UI — submissions are one-way into the Sheet, no admin UI
 - Any server beyond Supabase's client SDK, if/when Supabase returns — stays fully static-hostable
 
 ## Current status (update as work progresses)
@@ -83,6 +87,7 @@ index.html
 - [x] Playlist embeddability — tested all 61 videos programmatically (hidden muted `YT.Player` per video, watched for real `PLAYING` state vs `onError` 101/150). Result: **61/61 embeddable**, zero blocked. (First test pass falsely showed mass failures — that was unmuted autoplay being silently blocked by browser policy, not real embed restrictions; muting the test players fixed it. If this is ever re-tested, mute the player or it'll produce false negatives.)
 - [x] Spotify / YT Music links — wired 2026-08-09 to the curated "Bus Radio" playlist in each app (Spotify `7woOLSZijkm50yU3QelG8X`, YT Music `PLDdNNsCxZ2Js`). Both verified live. `si=` share tokens stripped deliberately — they're per-share attribution and don't belong in a public page. Note the YT playlist ID is only 13 chars, which looks truncated but is genuinely valid — don't "fix" it
 - [ ] Deploy — repo is live at github.com/kanishksingh3012/bus-radio; deploying via Vercel (import repo in dashboard), not GitHub Pages
+- [ ] Song suggestions — UI + `js/recommend.js` built and verified in browser (toggle open/close, validation, honeypot, unconfigured-state message, no layout regressions on desktop or mobile), but `SHEET_ENDPOINT` is still a placeholder. Needs the Google Sheet + Apps Script Web App deployed (steps given directly to the user) and the resulting `/exec` URL dropped into `js/recommend.js`
 
 ## Build order
 

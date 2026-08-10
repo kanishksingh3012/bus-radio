@@ -80,8 +80,79 @@ a:hover { color: var(--text); }
 
 .top-links {
   display: flex;
+  align-items: center;
   gap: 22px;
 }
+
+.suggest-toggle {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  color: var(--gold);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.suggest-toggle:hover { color: var(--text); }
+
+/* Independent of .player-card/.credit on purpose — a small popover anchored
+   to the status bar, not tied to the player card's layout or height at all. */
+.suggest-panel {
+  position: fixed;
+  top: 60px;
+  right: var(--margin);
+  z-index: 2;
+  width: 220px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+
+#recommend-form {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#recommend-form input {
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .28);
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+#recommend-form input::placeholder { color: rgba(255, 255, 255, .4); }
+
+#rec-submit {
+  align-self: flex-start;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: rgba(232, 196, 106, .16);
+  color: var(--text);
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+#rec-submit:hover { background: rgba(232, 196, 106, .28); }
+#rec-submit:disabled { opacity: .5; cursor: default; }
+
+.rec-status {
+  margin: 8px 0 0;
+  min-height: 1rem;
+  font-size: 12px;
+  color: var(--text-dim-3);
+}
+.rec-status[data-tone="error"] { color: #ff9f8d; }
+.rec-status[data-tone="ok"] { color: #9fe0b4; }
 
 .masthead {
   position: fixed;
@@ -320,6 +391,17 @@ a:hover { color: var(--text); }
   pointer-events: none;
 }
 
+/* Honeypot: off-screen rather than display:none, so naive bots that skip
+   invisible fields still fill it in. Lost when the old recommend form's
+   CSS was stripped during the rebrand — needed again now it's back. */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 :focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
@@ -350,8 +432,11 @@ a:hover { color: var(--text); }
       rgba(14, 9, 6, .88) 100%);
   }
 
-  .status-bar { top: 14px; font-size: 13px; color: var(--text); }
-  .top-links { gap: 14px; }
+  .status-bar { top: 14px; font-size: 13px; color: var(--text); align-items: flex-start; }
+  /* Three items (Spotify/YT Music/Suggest) don't fit on one line at mobile
+     widths without crowding the clock — wraps to a second, right-aligned
+     line instead of shrinking the gap to almost nothing. */
+  .top-links { flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; max-width: 60%; }
 
   .masthead { top: 196px; }
   .masthead-title {
