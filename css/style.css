@@ -16,6 +16,11 @@
      same horizontal line as the player card's bottom edge, at every
      breakpoint, without having to update two rules in sync by hand. */
   --shelf-bottom: 48px;
+  /* Glass Control Card handoff's single tunable "glass strength" dial (0–1,
+     spec default 0.26; set to 0.1 by request). Background tint alpha and
+     backdrop-blur radius both derive from this one value on purpose — see
+     .player-card — so they can never drift out of sync with each other. */
+  --glass-amount: 0.1;
   --font-display: 'Anek Devanagari', system-ui, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, monospace;
 }
@@ -38,14 +43,17 @@ body {
 a { color: var(--gold); text-decoration: none; }
 a:hover { color: var(--text); }
 
-/* Static by decision — no idle animation on the illustration. */
+/* Static by decision — no idle animation on the illustration. Position/scrim
+   values here are desktop's (from the Glass Control Card handoff) — mobile
+   overrides both in its own media query below, using the same photo with a
+   different focal point (both handoffs ship the identical dashboard-bg.png). */
 .hero {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
+  object-position: 45% 60%;
   z-index: 0;
   pointer-events: none;
 }
@@ -55,7 +63,7 @@ a:hover { color: var(--text); }
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(20, 14, 10, .52) 0%, rgba(20, 14, 10, .06) 38%, rgba(20, 14, 10, .5) 100%);
+  background: linear-gradient(180deg, rgba(20, 14, 10, .5) 0%, rgba(20, 14, 10, .08) 42%, rgba(14, 9, 6, .72) 100%);
 }
 
 .status-bar,
@@ -198,50 +206,56 @@ a:hover { color: var(--text); }
   flex-wrap: wrap;
 }
 
+/* Glass Control Card handoff (design_handoff_glass_control_card/README.md).
+   Fixed-width vertical card, not the old fit-content horizontal row —
+   width no longer depends on content, so the old .blocked-help ballooning
+   fix (max-width hack) isn't needed here; a fixed width can't balloon. */
 .player-card {
-  /* min-height (not height) + wrap so .blocked-help can drop onto its own
-     row and the card grows to fit it, without affecting the normal case
-     where that row stays hidden and the card renders at the same 109px. */
-  min-height: 109px;
-  padding: 0 28px;
+  width: 420px;
+  box-sizing: border-box;
+  padding: 20px 22px 18px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  border-radius: 20px;
+  /* Both derive from the one --glass-amount dial — see :root. */
+  background: rgba(28, 20, 14, var(--glass-amount));
+  backdrop-filter: blur(calc(30px * var(--glass-amount))) saturate(1.1);
+  -webkit-backdrop-filter: blur(calc(30px * var(--glass-amount))) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, .3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .22);
+  /* Keeps card text legible however transparent the glass fill gets —
+     text opacity itself always stays 1, per the handoff. */
+  text-shadow: 0 1px 10px rgba(0, 0, 0, .6);
+}
+
+/* Groups art+text into one row within the card's vertical stack — shared
+   as-is by mobile too, since both breakpoints' Glass Control Card handoffs
+   use the same column layout and content order. */
+.track-row {
+  display: flex;
   align-items: center;
-  gap: 36px;
-  border-radius: 18px;
-  background: var(--card-bg);
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .22);
-  width: fit-content;
-  /* fit-content alone isn't enough once a wrapping paragraph (.blocked-help)
-     is in play — a flex container's shrink-to-fit width calculation can
-     size itself to a wrapped item's unwrapped (max-content) width instead
-     of the intended narrower line, ballooning the card. This caps it at
-     the same width the normal 3-item row already computes to (~661px),
-     so the card never grows wider than usual — the help text just wraps
-     within that fixed width instead. */
-  max-width: min(100%, 665px);
+  gap: 14px;
 }
 
 .art {
-  width: 78px;
-  height: 78px;
+  width: 58px;
+  height: 58px;
   flex: none;
   border-radius: 12px;
   background: linear-gradient(140deg, var(--accent-a), var(--accent-b));
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
   object-fit: cover;
 }
 
 .track-info {
-  width: 153px;
-  flex: none;
   min-width: 0;
 }
 
+/* "NOW PLAYING" eyebrow isn't part of this card's design on either
+   breakpoint (kept in markup, not deleted, in case a future design wants it
+   back). */
 .eyebrow {
+  display: none;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .24em;
@@ -250,7 +264,6 @@ a:hover { color: var(--text); }
 }
 
 .track-title {
-  margin-top: 5px;
   font-size: 20px;
   font-weight: 600;
   color: var(--text);
@@ -260,34 +273,72 @@ a:hover { color: var(--text); }
 }
 
 .track-channel {
-  font-size: 13px;
-  color: var(--text-dim-3);
+  font-size: 14px;
+  color: rgba(255, 255, 255, .6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.transport {
-  width: 300px;
-  flex: none;
+.time-labels {
+  margin-top: 16px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, .7);
+}
+
+.progress-track {
+  margin-top: 6px;
+  position: relative;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .28);
+  cursor: pointer;
+  touch-action: none; /* dragging the thin bar shouldn't trigger page scroll on touch */
+}
+
+.progress-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text);
+  position: relative;
+}
+
+/* Permanent scrubber handle on the fill's leading edge (mobile has its own,
+   larger, ::after handle inside its own media query — this one is scoped
+   to desktop's thinner 3px track via the min-width query below). */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--text);
 }
 
 .controls {
+  margin-top: 16px;
+  padding: 0 2px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  color: var(--text-dim-1);
+  justify-content: space-between;
+  color: var(--text);
 }
 
 .ctrl {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  /* 32px minimum hit target per the handoff, even though the visible glyph
+     is smaller — the icon itself is sized via .ctrl svg below. */
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
   background: transparent;
@@ -299,8 +350,8 @@ a:hover { color: var(--text); }
 .ctrl:disabled { opacity: .35; cursor: default; }
 
 .ctrl svg {
-  width: 1rem;
-  height: 1rem;
+  width: 17px;
+  height: 17px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -308,8 +359,8 @@ a:hover { color: var(--text); }
 }
 
 .ctrl-play {
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   background: rgba(255, 255, 255, .92);
   color: #1a1613;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
@@ -321,52 +372,40 @@ a:hover { color: var(--text); }
 .ctrl-play.is-playing .icon-play { display: none; }
 .ctrl-play.is-playing .icon-pause { display: block; }
 
-.progress-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Shuffle: the one constant-accent icon (amber), per the handoff — dims to
+   the shared inactive tone when toggled off, no separate "toggled-off amber"
+   state to define. Repeat cycles off/all/one and reuses the same colors. */
+.ctrl-shuffle { color: var(--accent-b); }
+.ctrl-shuffle[aria-pressed="false"] { color: rgba(255, 255, 255, .55); }
+
+.ctrl-repeat[data-mode="off"] { color: rgba(255, 255, 255, .55); }
+.ctrl-repeat[data-mode="all"],
+.ctrl-repeat[data-mode="one"] { color: var(--accent-b); }
+
+.repeat-badge {
+  display: none;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim-3);
+  font-size: 8px;
+  line-height: 1;
+  color: inherit;
 }
-
-.progress-track {
-  flex: 1;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, .26);
-  cursor: pointer;
-  touch-action: none; /* dragging the thin bar shouldn't trigger page scroll on touch */
-}
-
-.progress-fill {
-  display: block;
-  width: 0%;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--text);
-}
+.ctrl-repeat { position: relative; }
+.ctrl-repeat[data-mode="one"] .repeat-badge { display: block; }
 
 /* Only shown when playback is actually blocked — drops onto its own full
    row (`flex: 1 0 100%` needs .player-card's `flex-wrap: wrap`) so the
    message can wrap instead of truncating like the title/channel lines. */
+/* Simple now that .player-card is a fixed-420px-wide column layout: no
+   flex-basis/min-width tricks needed (those were for the old row+wrap card,
+   where width was content-derived and could balloon — a fixed width can't).
+   Needs its own margin-top since .player-card has no `gap` of its own to
+   borrow spacing from (each section here sets its own explicit margin-top
+   instead, so this just follows that same pattern). */
 .blocked-help {
-  /* flex-shrink must be 1 (not 0, unlike the other rows that use this
-     100%-row trick) — shrink:0 pins the item at its max-content (unwrapped)
-     width no matter what min-width says, which is what actually caused the
-     card to balloon to fit the sentence on one line. min-width:0 alone,
-     without also fixing shrink, did nothing. */
-  flex: 1 1 100%;
-  min-width: 0;
-  /* No top margin: .player-card's own `gap` already inserts a row-gap
-     above this wrapped line (that's just how `gap` works once a flex
-     container wraps) — an additional top margin here was stacking on top
-     of that, pushing this row too far from the row above and making the
-     card read as top-heavy/unbalanced. padding-top is what actually
-     separates the divider from the text; margin-bottom is breathing room
-     before the card's own edge, since .player-card has zero vertical padding. */
-  margin: 0 0 16px;
+  margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--card-border);
   font-size: 12px;
@@ -420,22 +459,22 @@ a:hover { color: var(--text); }
   .masthead-title { font-size: clamp(48px, 12vw, 96px); }
 }
 
-/* Mobile — design_handoff_glass_shelf_mobile/README.md, 390x844 frame.
-   Not just a squeezed desktop: different hero crop, its own scrim ramp,
-   a stacked card, and a scrubber handle. */
+/* Mobile — design_handoff_glass_control_card_mobile/README.md, 390x844
+   frame. Same "Glass Control Card" language as desktop (shared column
+   layout, shared --glass-amount dial, same card content/order) — the real
+   differences are just the photo's focal point, the scrim ramp, and a
+   handful of smaller-scale tokens (card padding, art/type sizes, handle). */
 @media (max-width: 767px) {
   :root { --margin: 24px; --shelf-bottom: 34px; }
 
-  /* Mobile crop aims at the driver and steering wheel, not the centre shrine. */
-  .hero { object-position: 100% 37%; }
+  /* Same photo as desktop, different focal point — dashboard/shrine area. */
+  .hero { object-position: 35% 65%; }
 
   .scrim {
     background: linear-gradient(180deg,
-      rgba(20, 14, 10, .7) 0%,
-      rgba(20, 14, 10, .6) 30%,
-      rgba(20, 14, 10, .22) 48%,
-      rgba(16, 10, 7, .72) 78%,
-      rgba(14, 9, 6, .88) 100%);
+      rgba(20, 14, 10, .55) 0%,
+      rgba(20, 14, 10, .15) 40%,
+      rgba(14, 9, 6, .75) 100%);
   }
 
   .status-bar { top: 14px; font-size: 13px; color: var(--text); align-items: flex-start; }
@@ -458,88 +497,32 @@ a:hover { color: var(--text); }
     align-items: stretch;
   }
 
-  /* Art + track text share the first line; the transport block wraps below. */
+  /* Card is full-width of the 24px gutters, not fixed-width like desktop's
+     420px — everything else (column direction, glass background/blur,
+     border, shadow, text-shadow) is inherited from the shared .player-card
+     rule above, since the mobile handoff's values match desktop's exactly. */
   .player-card {
     width: 100%;
-    height: auto;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 22px 20px 24px;
-    gap: 20px 16px;
-    border-radius: 26px;
-    background: rgba(20, 15, 11, .55);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border-color: rgba(255, 255, 255, .2);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .2);
+    padding: 20px 20px 18px;
   }
 
-  .art { width: 64px; height: 64px; border-radius: 14px; }
+  .art { width: 56px; height: 56px; }
 
-  /* basis 0 (not auto) so long titles truncate instead of pushing the art
-     onto its own line */
-  .track-info { width: auto; flex: 1 1 0; }
-  .eyebrow { font-size: 10px; letter-spacing: .22em; color: rgba(255, 255, 255, .6); }
-  .track-title { margin-top: 4px; font-size: 21px; }
-  .track-channel { font-size: 14px; }
+  .track-title { font-size: 19px; }
+  .track-channel { font-size: 13px; }
 
-  /* column-reverse puts the progress block above the controls without
-     reordering the markup (which keeps the desktop tab order intact). */
-  .transport {
-    width: auto;
-    flex: 1 0 100%;
-    flex-direction: column-reverse;
-    gap: 18px;
-  }
+  /* Handle is 1px larger than desktop's (12px vs 11px) — only the size
+     changes, position still inherits the shared left:100% rule above. */
+  .progress-fill::after { width: 12px; height: 12px; }
 
-  .progress-row {
-    flex-wrap: wrap;
-    gap: 0;
-    font-size: 11px;
-    color: rgba(255, 255, 255, .55);
-  }
-  /* The handoff sits the 4px bar inside a 20px row so the 14px handle has
-     room; these margins reproduce that rhythm without an extra wrapper. */
-  .progress-track {
-    order: -1;
-    flex: 1 0 100%;
-    height: 4px;
-    margin: 8px 0 14px;
-    background: rgba(255, 255, 255, .24);
-  }
-  #time-total { margin-left: auto; }
-
-  /* Scrubber handle rides the leading edge of the fill — mobile only. */
-  .progress-fill { position: relative; }
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    right: -7px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--text);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
-  }
-
-  .controls { justify-content: center; gap: 26px; }
-  .ctrl {
-    width: 56px;
-    height: 56px;
-    background: rgba(255, 255, 255, .08);
-    color: rgba(255, 255, 255, .9);
-  }
+  /* All five transport icons meet the spec's 44x44 minimum touch target
+     (desktop's 32px .ctrl is too small to tap reliably) at the spec's own
+     19px base icon size. Play keeps desktop's proportionally-larger circle
+     for the same visual hierarchy, just scaled to this card's smaller tokens. */
+  .ctrl { width: 44px; height: 44px; }
   .ctrl svg { width: 19px; height: 19px; }
-  .ctrl-play {
-    width: 74px;
-    height: 74px;
-    background: #f3ece1;
-    color: #1a1613;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
-  }
-  .ctrl-play svg { width: 24px; height: 24px; }
+  .ctrl-play { width: 54px; height: 54px; }
+  .ctrl-play svg { width: 21px; height: 21px; }
 
   /* Card is full-width here, so the shared bottom line would put this
      right on top of the play button — sits just below the card instead. */
@@ -562,12 +545,20 @@ a:hover { color: var(--text); }
   .masthead-title { font-size: clamp(28px, 8vw, 44px); line-height: .95; }
   .masthead-sub { margin-top: 6px; font-size: 10px; }
 
-  .player-card { height: 76px; gap: 20px; padding: 0 16px; }
-  .art { width: 52px; height: 52px; }
-  .track-info { width: 130px; }
+  /* No .transport to compress anymore (it's gone) — shrink the new vertical
+     stack proportionally instead: smaller art/type, tighter inter-row
+     margins, smaller buttons, narrower fixed card width. */
+  .player-card { width: 320px; padding: 14px 16px 12px; }
+  .art { width: 44px; height: 44px; }
   .track-title { font-size: 16px; }
-  .transport { width: 220px; gap: 6px; }
-  .ctrl-play { width: 40px; height: 40px; }
+  .track-channel { font-size: 12px; }
+  .time-labels { margin-top: 10px; }
+  .progress-track { margin-top: 4px; }
+  .controls { margin-top: 10px; }
+  .ctrl { width: 28px; height: 28px; }
+  .ctrl svg { width: 14px; height: 14px; }
+  .ctrl-play { width: 34px; height: 34px; }
+  .ctrl-play svg { width: 14px; height: 14px; }
 }
 
 /* Narrow AND short — split-screen, a foldable, or a small resized window.
@@ -586,17 +577,16 @@ a:hover { color: var(--text); }
   .masthead-title { font-size: 30px; }
   .masthead-sub { margin-top: 8px; font-size: 10px; letter-spacing: .18em; }
 
-  .player-card { padding: 14px 16px 16px; gap: 12px; border-radius: 20px; }
+  .player-card { padding: 14px 16px 16px; }
   .art { width: 48px; height: 48px; border-radius: 10px; }
   .track-title { font-size: 17px; }
   .track-channel { font-size: 12px; }
 
-  .transport { gap: 10px; }
-  .progress-track { margin: 6px 0 10px; }
+  .time-labels { margin-top: 10px; }
+  .progress-track { margin-top: 4px; }
 
-  .controls { gap: 18px; }
-  .ctrl { width: 44px; height: 44px; }
-  .ctrl-play { width: 56px; height: 56px; }
+  .controls { margin-top: 8px; }
+  .ctrl-play { width: 48px; height: 48px; }
   .ctrl-play svg { width: 18px; height: 18px; }
 }
 

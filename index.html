@@ -11,7 +11,10 @@
 </head>
 <body>
 
-<img class="hero" src="assets/hero.webp" alt="Interior of an Indian public bus, looking past the driver through the windshield onto a roadside town.">
+<!-- Desktop and mobile now share the same background photo (Glass Control
+     Card handoff, both breakpoints) — only the CSS crop/position differs. -->
+<img class="hero" src="assets/hero.webp" alt="View of a bus dashboard and shrine looking out onto a busy Indian street.">
+
 <div class="scrim" aria-hidden="true"></div>
 
 <header class="status-bar">
@@ -50,35 +53,46 @@
 
 <main class="shelf-row">
   <section class="player-card" aria-label="Player">
-    <img class="art" id="track-art" alt="" aria-hidden="true">
+    <!-- .track-row groups art+text into one row within the card's vertical
+         stack — same structure on both desktop and mobile now that mobile's
+         Glass Control Card handoff also uses a column layout. -->
+    <div class="track-row">
+      <img class="art" id="track-art" alt="" aria-hidden="true">
 
-    <div class="track-info">
-      <div class="eyebrow">Now playing</div>
-      <div class="track-title" id="track-title">Press play</div>
-      <div class="track-channel" id="track-channel">—</div>
+      <div class="track-info">
+        <div class="eyebrow">Now playing</div>
+        <div class="track-title" id="track-title">Press play</div>
+        <div class="track-channel" id="track-channel">—</div>
+      </div>
     </div>
 
-    <div class="transport">
-      <div class="controls">
-        <button class="ctrl" id="prev" type="button" aria-label="Previous track">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6v12M19 6 9 12l10 6z"/></svg>
-        </button>
-        <button class="ctrl ctrl-play" id="play" type="button" aria-label="Play" aria-pressed="false">
-          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
-          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
-        </button>
-        <button class="ctrl" id="next" type="button" aria-label="Next track">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6v12M5 6l10 6-10 6z"/></svg>
-        </button>
-      </div>
+    <div class="time-labels">
+      <span id="time-elapsed">0:00</span>
+      <span id="time-total">0:00</span>
+    </div>
 
-      <div class="progress-row">
-        <span id="time-elapsed">0:00</span>
-        <div class="progress-track" id="progress-track" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-        <span id="time-total">0:00</span>
-      </div>
+    <div class="progress-track" id="progress-track" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl ctrl-shuffle" id="shuffle" type="button" aria-label="Shuffle" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+      </button>
+      <button class="ctrl" id="prev" type="button" aria-label="Previous track">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6v12M19 6 9 12l10 6z"/></svg>
+      </button>
+      <button class="ctrl ctrl-play" id="play" type="button" aria-label="Play" aria-pressed="false">
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+      </button>
+      <button class="ctrl" id="next" type="button" aria-label="Next track">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6v12M5 6l10 6-10 6z"/></svg>
+      </button>
+      <button class="ctrl ctrl-repeat" id="repeat" type="button" aria-label="Repeat" data-mode="off">
+        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <span class="repeat-badge" aria-hidden="true">1</span>
+      </button>
     </div>
 
     <p class="blocked-help" id="blocked-help" hidden></p>

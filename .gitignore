@@ -4,9 +4,17 @@
 # design_handoff_* folders
 Deluxe Express Bus Radio Platform.zip
 mobile Bus Radio Platform.zip
+V2. Deluxe Express Bus Radio Platform.zip
+V2. Mobile Deluxe Express Bus Radio Platform.zip
 
 # Byte-identical duplicates of the same 18 MB hero master. The design
 # reference HTML in each folder wants a local copy; the shipped site uses
 # assets/hero.webp instead, so these never need to be tracked.
 design_handoff_glass_shelf_player/Frame 1.png
 design_handoff_glass_shelf_mobile/Frame 1.png
+
+# Same story for the V2 "Glass Control Card" handoffs — both folders ship
+# a byte-identical 11 MB dashboard-bg.png (confirmed via md5), and the
+# shipped site uses assets/hero.webp (converted from this same master).
+design_handoff_glass_control_card/dashboard-bg.png
+design_handoff_glass_control_card_mobile/dashboard-bg.png

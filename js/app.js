@@ -13,6 +13,8 @@
     play: document.getElementById('play'),
     prev: document.getElementById('prev'),
     next: document.getElementById('next'),
+    shuffle: document.getElementById('shuffle'),
+    repeat: document.getElementById('repeat'),
     elapsed: document.getElementById('time-elapsed'),
     total: document.getElementById('time-total'),
     progressTrack: document.getElementById('progress-track'),
@@ -20,7 +22,17 @@
     blockedHelp: document.getElementById('blocked-help')
   };
 
+  // `tracks` always points at whichever of these two is currently active —
+  // everything else in this file (step, loadCurrent, onError's length
+  // check, etc.) just reads/indexes `tracks` and doesn't need to know which
+  // ordering is live. originalTracks is playlist.json's own order;
+  // shuffledTracks is computed once at load (see shuffleInPlace below) and
+  // reused on every toggle back to shuffle, not re-randomized per toggle.
+  var originalTracks = [];
+  var shuffledTracks = [];
   var tracks = [];
+  var shuffleOn = true; // shuffled by default, per the earlier standing decision
+  var repeatMode = 'off'; // 'off' | 'all' | 'one' — see onStateChange for what each does
   var index = 0;
   var player = null;
   var apiReady = false;
@@ -49,6 +61,40 @@
     els.play.disabled = !on;
     els.prev.disabled = !on;
     els.next.disabled = !on;
+    els.shuffle.disabled = !on;
+    els.repeat.disabled = !on;
+  }
+
+  function renderShuffleState() {
+    els.shuffle.setAttribute('aria-pressed', String(shuffleOn));
+  }
+
+  // Reuses the same pre-computed shuffledTracks on every toggle (doesn't
+  // re-shuffle each time) — only decides which of the two orderings is
+  // active. Keeps the currently-playing track playing either way; only
+  // future prev/next/ended navigation is affected by the switch.
+  function toggleShuffle() {
+    var current = tracks[index];
+    shuffleOn = !shuffleOn;
+    tracks = shuffleOn ? shuffledTracks : originalTracks;
+    var newIndex = tracks.indexOf(current);
+    index = newIndex === -1 ? 0 : newIndex;
+    renderShuffleState();
+  }
+
+  function renderRepeatState() {
+    els.repeat.dataset.mode = repeatMode;
+    els.repeat.setAttribute('aria-label', 'Repeat: ' + repeatMode);
+  }
+
+  // 'off' and 'all' both keep the ambient-radio queue going continuously
+  // (this player never just stops) — 'all' is the icon's on-state for
+  // people who expect a visible toggle, but functionally it's the same as
+  // 'off' here. 'one' is the only behaviorally distinct mode: replay the
+  // current track instead of advancing.
+  function cycleRepeat() {
+    repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
+    renderRepeatState();
   }
 
   function renderTrack() {
@@ -115,14 +161,12 @@
     els.progressTrack.setAttribute('aria-valuetext', '0:00 of 0:00');
   }
 
-  // The mobile handoff labels the right-hand time as remaining ("-2:56");
-  // desktop labels it as total duration. Keep the media query in sync with
-  // the 767px breakpoint in css/style.css.
-  var mqMobile = window.matchMedia('(max-width: 767px)');
-
+  // Both design handoffs (mobile, and now the Glass Control Card desktop
+  // redesign) label the right-hand time as remaining ("-2:56"), not total
+  // duration — used to differ by breakpoint, doesn't anymore.
   function rightTimeLabel(current, duration) {
     if (!duration) return '0:00';
-    return mqMobile.matches ? '-' + formatTime(duration - current) : formatTime(duration);
+    return '-' + formatTime(duration - current);
   }
 
   // Screen readers get the actual times (aria-valuetext), not just a bare
@@ -135,8 +179,6 @@
     els.progressTrack.setAttribute('aria-valuenow', String(Math.round(pct)));
     els.progressTrack.setAttribute('aria-valuetext', formatTime(current) + ' of ' + formatTime(duration));
   }
-
-  mqMobile.addEventListener('change', updateProgress);
 
   function updateProgress() {
     if (dragging) return; // don't fight the drag preview with the polling loop
@@ -198,7 +240,12 @@
 
   function onStateChange(e) {
     if (e.data === YT.PlayerState.ENDED) {
-      step(1);
+      if (repeatMode === 'one') {
+        player.seekTo(0, true);
+        player.playVideo();
+      } else {
+        step(1);
+      }
       return;
     }
     if (e.data === YT.PlayerState.PLAYING) consecutiveErrors = 0;
@@ -262,7 +309,7 @@
     .then(function (data) {
       if (!Array.isArray(data)) throw new Error('playlist is not an array');
 
-      tracks = data.filter(function (t, i) {
+      originalTracks = data.filter(function (t, i) {
         if (!t || !t.videoId) {
           console.warn('[player] playlist entry #' + i + ' has no videoId — skipped', t);
           return false;
@@ -272,8 +319,11 @@
         return true;
       });
 
-      if (!tracks.length) throw new Error('playlist empty');
-      shuffleInPlace(tracks);
+      if (!originalTracks.length) throw new Error('playlist empty');
+      shuffledTracks = shuffleInPlace(originalTracks.slice());
+      tracks = shuffleOn ? shuffledTracks : originalTracks;
+      renderShuffleState();
+      renderRepeatState();
       renderTrack();
       maybeInit();
 
@@ -315,6 +365,8 @@
   els.play.addEventListener('click', togglePlay);
   els.prev.addEventListener('click', function () { step(-1); });
   els.next.addEventListener('click', function () { step(1); });
+  els.shuffle.addEventListener('click', toggleShuffle);
+  els.repeat.addEventListener('click', cycleRepeat);
 
   // Pointer Events unify mouse + touch: pointerdown starts the drag and
   // shows an immediate preview (this also covers a plain click/tap, which
